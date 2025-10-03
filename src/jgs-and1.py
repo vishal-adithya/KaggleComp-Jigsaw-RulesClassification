@@ -90,31 +90,40 @@ param_grid = {
     "n_estimators": [100,300,500],
     "learning_rate":[0.01,0.1,0.2],
     "max_depth": [3,6,9],
-    "min_child_weight":[1,3,5],
-    "subsample": [0.7,0.9,1.0],
-    "colsample_bytree": [0.7,0.9,1.0],
+    "min_child_weight":[5,7,9],
+    "subsample": [0.7,0.6,0.5],
+    "colsample_bytree": [0.7,0.6,0.5],
     "reg_alpha":[0,0.01,0.1,1,10,100],
-    "reg_lambda":[0.5,0.7,1.0,1.3]
+    "reg_lambda":[1.0,3.0,5.0]
 }
 
 rsv = RandomizedSearchCV(cls,param_distributions=param_grid,
                          n_iter=5,
                          cv = 10,
-                         scoring="accuracy",
+                         scoring="roc_auc",
                          n_jobs=-1,
                          verbose=4,
                          random_state=4)
 
 rsv.fit(X_train,y_train)
 best_est =rsv.best_estimator_ 
+print(best_est)
 
+est_params = {'subsample': 0.6,
+ 'n_estimators': 300,
+ 'min_child_weight': 7,
+ 'max_depth': 6,
+ 'learning_rate': 0.1,
+ 'colsample_bytree': 0.6,
+ 'reg_lambda': 5,
+ 'reg_alpha': 1,}
+cls = xgb.XGBClassifier(**est_params,use_label_encoder = False,
+                        eval_metric = "auc",early_stopping_rounds = 20)
+cls.fit(X_train,y_train,eval_set = [(X_train,y_train),(X_val,y_val)],verbose = True)
 
-
-
-
-
-
-yhat = best_est.predict(X_val)
+yhat = cls.predict(X_val)
 print(classification_report(y_val,yhat))
 print(confusion_matrix(y_val,yhat))
+
+
 best_est.save_model("jgs-re-tfidf-stdscale-xgb-seed04--03-10-2025.json")
